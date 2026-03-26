@@ -13,6 +13,7 @@
 
     <!-- CHILD MODULES -->
     <modules>
+        <module>discovery-server</module>
     </modules>
 
     <!-- COMMON DEPENDENCY VERSIONS -->
