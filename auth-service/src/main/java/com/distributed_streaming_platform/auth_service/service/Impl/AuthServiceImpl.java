@@ -102,8 +102,28 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse refreshToken(String refreshToken) {
-        return null;
+    public AuthResponse refreshToken(String token) {
+
+        log.info("Refresh token request received");
+
+        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
+                .orElseThrow(()-> {
+                    log.error("Refresh Token not found");
+                    return new ResourceNotFoundException("Invalid refresh token");
+                });
+
+        if (refreshToken.getRevoked() || refreshToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            log.warn("Refresh token is expired or revoked");
+            throw new InvalidCredentialsException("Refresh token expired or revoked");
+        }
+
+        User user = refreshToken.getUser();
+        String newAccessToken = jwtService.generateToken(user.getEmail());
+        log.info("Access token refreshed for user: {}", user.getEmail());
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(token)
+                .build();
     }
 
     private String createRefreshToken(User user){
