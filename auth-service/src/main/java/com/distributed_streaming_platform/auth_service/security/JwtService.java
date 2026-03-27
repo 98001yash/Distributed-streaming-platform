@@ -25,12 +25,13 @@ public class JwtService {
     private long jwtExpiration;
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(userDetails.getUsername());
+        return generateToken(userDetails.getUsername(), "USER");
     }
 
-    public String generateToken(String username) {
+    public String generateToken(String username, String role) {
         return Jwts.builder()
                 .setSubject(username)
+                .claim("role",role)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
