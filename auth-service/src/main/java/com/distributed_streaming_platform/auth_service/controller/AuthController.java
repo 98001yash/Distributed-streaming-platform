@@ -27,7 +27,7 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody
                                                      RegisterRequest request){
 
-        log.info("Received rehister request for emal: {}",request.getEmail());
+        log.info("Received register request for email: {}",request.getEmail());
         AuthResponse response = authService.register(request);
 
         return ResponseEntity.ok(response);
@@ -36,7 +36,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request){
 
-        log.info("Received login request for emal: {}",request.getEmail());
+        log.info("Received login request for email: {}",request.getEmail());
         AuthResponse response = authService.login(request);
 
         return ResponseEntity.ok(response);
