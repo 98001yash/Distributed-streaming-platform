@@ -8,6 +8,7 @@ spring:
   application:
     name: api-gateway
 
+
   cloud:
     gateway:
       default-filters:
@@ -24,9 +25,11 @@ spring:
               - DELETE
               - OPTIONS
 
+
+
+
+
       routes:
-
-
         - id: auth-service
           uri: lb://AUTH-SERVICE
           predicates:
@@ -35,12 +38,26 @@ spring:
             - AuthenticationFilter
 
 
-        - id: user-service
-          uri: lb://USER-SERVICE
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
           predicates:
             - Path=/user/**
           filters:
             - AuthenticationFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter-replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                key-resolver: "#{@UserKeyResolver}"
+
+
+
+
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 
 eureka:

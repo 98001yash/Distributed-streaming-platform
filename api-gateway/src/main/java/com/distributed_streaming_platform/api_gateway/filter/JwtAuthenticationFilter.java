@@ -3,6 +3,7 @@ package com.distributed_streaming_platform.api_gateway.filter;
 
 import com.distributed_streaming_platform.api_gateway.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHeaders;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -12,6 +13,7 @@ import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter implements GlobalFilter {
 
     private final JwtUtil jwtUtil;
@@ -42,6 +44,12 @@ public class JwtAuthenticationFilter implements GlobalFilter {
 
             String username = jwtUtil.extractUsername(token);
             String role = jwtUtil.extractRole(token);
+
+            log.info("AUDIT → user={} role={} method={} path={}",
+                    username,
+                    role,
+                    exchange.getRequest().getMethod(),
+                    exchange.getRequest().getURI());
 
             //  Forward user info to downstream services
             exchange.getRequest().mutate()
