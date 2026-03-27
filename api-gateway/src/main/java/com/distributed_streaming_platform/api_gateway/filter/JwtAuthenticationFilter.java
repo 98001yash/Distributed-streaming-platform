@@ -43,6 +43,7 @@ public class JwtAuthenticationFilter implements GlobalFilter {
         try {
 
             String username = jwtUtil.extractUsername(token);
+            Long userId = jwtUtil.extractUserId(token);
             String role = jwtUtil.extractRole(token);
 
             log.info("AUDIT → user={} role={} method={} path={}",
@@ -55,6 +56,7 @@ public class JwtAuthenticationFilter implements GlobalFilter {
             exchange.getRequest().mutate()
                     .header("X-User-Email", username)
                     .header("X-User-Role", role)
+                    .header("X-User-Id", String.valueOf(userId))
                     .build();
 
         } catch (Exception e) {

@@ -13,11 +13,12 @@ public class UserInterceptor implements HandlerInterceptor {
                              Object handler){
 
         String email = request.getHeader("X-User-Email");
+        String idHeader = request.getHeader("X-User-Id");
         String role = request.getHeader("X-User-Role");
 
-        if(email !=null && role !=null){
-
-            UserContextHolder.setUser(email, role);
+        if(idHeader != null && email !=null && role !=null){
+            Long userId = Long.parseLong(idHeader);
+            UserContextHolder.setUser(userId,email, role);
         }
         return true;
     }

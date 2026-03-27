@@ -1,0 +1,67 @@
+package com.distributed_streaming_platform.user_service.service.Impl;
+
+import com.distributed_streaming_platform.user_service.auth.UserContextHolder;
+import com.distributed_streaming_platform.user_service.dtos.UpdateUserRequest;
+import com.distributed_streaming_platform.user_service.dtos.UserResponse;
+import com.distributed_streaming_platform.user_service.entity.User;
+import com.distributed_streaming_platform.user_service.exceptions.UnauthorizedAccessException;
+import com.distributed_streaming_platform.user_service.repository.UserRepository;
+import com.distributed_streaming_platform.user_service.service.UserService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.springframework.stereotype.Service;
+
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class UserServiceImpl implements UserService {
+
+    private final UserRepository userRepository;
+
+
+    @Override
+    public UserResponse getCurrentUser() {
+
+        Long userId  = UserContextHolder.getCurrentUserId();
+
+        if(userId == null){
+            log.warn("Unauthorized access attempt: userId is null");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+
+        log.info("Fetching profile for userId={}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> {
+                    log.error("User not found for userId={}",userId);
+                    return new ResourceNotFoundException("User not found");
+                });
+
+
+        return mapToResponse(user);
+    }
+
+    @Override
+    public UserResponse updateCurrentUser(UpdateUserRequest request) {
+        return null;
+    }
+
+    @Override
+    public UserResponse createUser(Long id, String email) {
+        return null;
+    }
+
+    private UserResponse mapToResponse(User user){
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .profileImage(user.getProfileImage())
+                .bio(user.getBio())
+                .country(user.getCountry())
+                .language(user.getLanguage())
+                .build();
+    }
+}

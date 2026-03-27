@@ -24,11 +24,11 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    public String generateToken(UserDetails userDetails) {
-        return generateToken(userDetails.getUsername(), "USER");
+    public String generateToken(UserDetails userDetails, Long userId, String role) {
+        return generateToken(userDetails.getUsername(), userId, role);
     }
 
-    public String generateToken(String username, String role) {
+    public String generateToken(String username,Long userId, String role) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("role",role)

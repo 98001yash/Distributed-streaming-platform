@@ -59,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("User registered successfully with id: {}",user.getId());
 
-        String accessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        String accessToken = jwtService.generateToken(user.getEmail(),user.getId(), user.getRole().name());
         String refreshToken = createRefreshToken(user);
 
         return AuthResponse.builder()
@@ -92,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
                     return new ResourceNotFoundException("User not found");
                 });
 
-        String accessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        String accessToken = jwtService.generateToken(user.getEmail(), user.getId(), user.getRole().name());
         String refreshToken = createRefreshToken(user);
 
         log.info("User logged in successfully: {}",user.getEmail());
@@ -120,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = refreshToken.getUser();
-        String newAccessToken = jwtService.generateToken(user.getEmail(), user.getRole().name());
+        String newAccessToken = jwtService.generateToken(user.getEmail(), user.getId(),user.getRole().name());
         log.info("Access token refreshed for user: {}", user.getEmail());
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
