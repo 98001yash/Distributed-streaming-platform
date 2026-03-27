@@ -15,6 +15,7 @@
     <modules>
         <module>discovery-server</module>
         <module>auth-service</module>
+        <module>api-gateway</module>
     </modules>
 
     <!-- COMMON DEPENDENCY VERSIONS -->
