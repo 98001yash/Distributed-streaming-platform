@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 
 @Service
@@ -22,6 +25,7 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
+    @Transactional
     public UserResponse getCurrentUser() {
 
         Long userId  = UserContextHolder.getCurrentUserId();
@@ -39,13 +43,39 @@ public class UserServiceImpl implements UserService {
                     return new ResourceNotFoundException("User not found");
                 });
 
-
         return mapToResponse(user);
     }
 
     @Override
     public UserResponse updateCurrentUser(UpdateUserRequest request) {
-        return null;
+
+        Long userId =  UserContextHolder.getCurrentUserId();
+
+        if(userId== null){
+            log.warn("Unauthorized update attempt: userId is null");
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+
+        log.info("Updating profile for userId={}",userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> {
+                    log.error("User not found for update userId={}",userId);
+                    return new ResourceNotFoundException("User not found");
+                });
+
+        // update fields
+        user.setName(request.getName());
+        user.setProfileImage(request.getProfileImage());
+        user.setBio(request.getBio());
+        user.setCountry(request.getCountry());
+        user.setLanguage(request.getLanguage());
+        user.setUpdatedAt(LocalDateTime.now());
+
+        userRepository.save(user);
+
+        log.info("User updated successfully for userId={}",userId);
+        return mapToResponse(user);
     }
 
     @Override
