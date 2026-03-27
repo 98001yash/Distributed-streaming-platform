@@ -6,6 +6,8 @@ import com.distributed_streaming_platform.auth_service.dtos.RegisterRequest;
 import com.distributed_streaming_platform.auth_service.entity.RefreshToken;
 import com.distributed_streaming_platform.auth_service.entity.User;
 import com.distributed_streaming_platform.auth_service.enums.Role;
+import com.distributed_streaming_platform.auth_service.exceptions.InvalidCredentialsException;
+import com.distributed_streaming_platform.auth_service.exceptions.ResourceNotFoundException;
 import com.distributed_streaming_platform.auth_service.exceptions.UserAlreadyExistsException;
 import com.distributed_streaming_platform.auth_service.repository.RefreshTokenRepository;
 import com.distributed_streaming_platform.auth_service.repository.UserRepository;
@@ -15,6 +17,7 @@ import com.distributed_streaming_platform.auth_service.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -58,8 +61,6 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.generateToken(user.getEmail());
         String refreshToken = createRefreshToken(user);
 
-        log.info("User logged in successfully: {}",user.getEmail());
-
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
@@ -68,7 +69,36 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        return null;
+
+        log.info("Login attempt for email: {}",request.getEmail());
+
+        try{
+         authenticationManager.authenticate(
+                 new UsernamePasswordAuthenticationToken(
+                         request.getEmail(),
+                         request.getPassword()
+                 )
+         );
+        }catch(Exception e){
+            log.error("Invalid login attempt for email: {}",request.getEmail());
+            throw new InvalidCredentialsException("Invalid Email or password");
+        }
+
+        User user=  userRepository.findByEmail(request.getEmail())
+                .orElseThrow(()-> {
+                    log.error("User not found for email: {}",request.getEmail());
+                    return new ResourceNotFoundException("User not found");
+                });
+
+        String accessToken = jwtService.generateToken(user.getEmail());
+        String refreshToken = createRefreshToken(user);
+
+        log.info("User logged in successfully: {}",user.getEmail());
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 
     @Override
