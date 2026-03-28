@@ -80,7 +80,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse createUser(Long id, String email) {
-        return null;
+
     }
 
     private UserResponse mapToResponse(User user){
