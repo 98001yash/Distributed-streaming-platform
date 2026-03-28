@@ -79,7 +79,27 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserResponse createUser(Long id, String email) {
+
+        log.info("Creating user in user-service with id={}, email={}",id, email);
+
+        if(userRepository.existsById(id)){
+            log.warn("User already exists with id={}",id);
+            return mapToResponse(userRepository.findById(id).get());
+        }
+
+        User user = User.builder()
+                .id(id)
+                .email(email)
+                .name("New User")
+                .isActive(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+        userRepository.save(user);
+
+        log.info("User created successfully with id={}",id);
+        return mapToResponse(user);
 
     }
 
