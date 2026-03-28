@@ -37,7 +37,7 @@ spring:
                 key-resolver: "#{@userKeyResolver}"
 
         - id: user-service-route
-          uri: lb://AUTH-SERVICE
+          uri: lb://USER-SERVICE
           predicates:
             - Path=/user/**
           filters:
