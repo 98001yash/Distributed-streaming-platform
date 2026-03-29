@@ -32,7 +32,7 @@ public class UserController {
     @RoleAllowed({"USER", "ADMIN", "CREATOR"})
     public ResponseEntity<UserResponse> updateUser(
             @Valid @RequestBody UpdateUserRequest request) {
-        log.info("Request received: PUT /api/user/me");
+        log.info("Request received: PUT /user/me");
         UserResponse response = userService.updateCurrentUser(request);
         return ResponseEntity.ok(response);
     }
