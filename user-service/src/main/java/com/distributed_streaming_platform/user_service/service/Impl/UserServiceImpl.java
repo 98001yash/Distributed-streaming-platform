@@ -5,16 +5,17 @@ import com.distributed_streaming_platform.user_service.dtos.UpdateUserRequest;
 import com.distributed_streaming_platform.user_service.dtos.UserResponse;
 import com.distributed_streaming_platform.user_service.entity.User;
 import com.distributed_streaming_platform.user_service.exceptions.UnauthorizedAccessException;
+import com.distributed_streaming_platform.user_service.exceptions.UserNotFoundException;
 import com.distributed_streaming_platform.user_service.repository.UserRepository;
 import com.distributed_streaming_platform.user_service.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.errors.ResourceNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-
 
 @Service
 @RequiredArgsConstructor
@@ -23,48 +24,53 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
-
     @Override
-    @Transactional
     public UserResponse getCurrentUser() {
 
-        Long userId  = UserContextHolder.getCurrentUserId();
+        Long userId = UserContextHolder.getCurrentUserId();
 
-        if(userId == null){
+        if (userId == null) {
             log.warn("Unauthorized access attempt: userId is null");
             throw new UnauthorizedAccessException("User not authenticated");
         }
 
-        log.info("Fetching profile for userId={}", userId);
+        return getUserByIdCached(userId);
+    }
+
+    @Cacheable(value = "users", key = "#userId")
+    public UserResponse getUserByIdCached(Long userId) {
+
+        log.info("Fetching user from DB for userId={} (CACHE MISS)", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(()-> {
-                    log.error("User not found for userId={}",userId);
-                    return new ResourceNotFoundException("User not found");
+                .orElseThrow(() -> {
+                    log.error("User not found for userId={}", userId);
+                    return new UserNotFoundException("User not found");
                 });
 
         return mapToResponse(user);
     }
-
     @Override
+    @Transactional
+    @CacheEvict(value = "users", key = "#userId")
     public UserResponse updateCurrentUser(UpdateUserRequest request) {
 
-        Long userId =  UserContextHolder.getCurrentUserId();
+        Long userId = UserContextHolder.getCurrentUserId();
 
-        if(userId== null){
+        if (userId == null) {
             log.warn("Unauthorized update attempt: userId is null");
             throw new UnauthorizedAccessException("User not authenticated");
         }
 
-        log.info("Updating profile for userId={}",userId);
+        log.info("Updating profile for userId={}", userId);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(()-> {
-                    log.error("User not found for update userId={}",userId);
-                    return new ResourceNotFoundException("User not found");
+                .orElseThrow(() -> {
+                    log.error("User not found for update userId={}", userId);
+                    return new UserNotFoundException("User not found");
                 });
 
-        // update fields
+        // Update fields
         user.setName(request.getName());
         user.setProfileImage(request.getProfileImage());
         user.setBio(request.getBio());
@@ -74,18 +80,20 @@ public class UserServiceImpl implements UserService {
 
         userRepository.save(user);
 
-        log.info("User updated successfully for userId={}",userId);
+        log.info("User updated successfully and cache evicted for userId={}", userId);
+
         return mapToResponse(user);
     }
+
 
     @Override
     @Transactional
     public UserResponse createUser(Long id, String email) {
 
-        log.info("Creating user in user-service with id={}, email={}",id, email);
+        log.info("Creating user in user-service with id={}, email={}", id, email);
 
-        if(userRepository.existsById(id)){
-            log.warn("User already exists with id={}",id);
+        if (userRepository.existsById(id)) {
+            log.warn("User already exists with id={}", id);
             return mapToResponse(userRepository.findById(id).get());
         }
 
@@ -96,14 +104,15 @@ public class UserServiceImpl implements UserService {
                 .isActive(true)
                 .createdAt(LocalDateTime.now())
                 .build();
+
         userRepository.save(user);
 
-        log.info("User created successfully with id={}",id);
-        return mapToResponse(user);
+        log.info("User created successfully with id={}", id);
 
+        return mapToResponse(user);
     }
 
-    private UserResponse mapToResponse(User user){
+    private UserResponse mapToResponse(User user) {
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -114,4 +123,5 @@ public class UserServiceImpl implements UserService {
                 .language(user.getLanguage())
                 .build();
     }
+
 }
