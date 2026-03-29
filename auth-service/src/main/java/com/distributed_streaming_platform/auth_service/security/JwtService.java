@@ -31,6 +31,7 @@ public class JwtService {
     public String generateToken(String username,Long userId, String role) {
         return Jwts.builder()
                 .setSubject(username)
+                .claim("userId", userId)
                 .claim("role",role)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
@@ -73,5 +74,9 @@ public class JwtService {
     private Key getSignInKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public Long extractUserId(String token) {
+        return extractAllClaims(token).get("userId", Long.class);
     }
 }

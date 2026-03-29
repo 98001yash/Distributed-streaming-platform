@@ -30,6 +30,7 @@ spring:
           predicates:
             - Path=/auth/**
           filters:
+            - JwtAuthenticationFilter
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 1
@@ -41,6 +42,7 @@ spring:
           predicates:
             - Path=/user/**
           filters:
+            - JwtAuthenticationFilter
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 5

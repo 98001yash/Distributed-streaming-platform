@@ -52,7 +52,7 @@ public class UserServiceImpl implements UserService {
     }
     @Override
     @Transactional
-    @CacheEvict(value = "users", key = "#userId")
+    @CacheEvict(value = "users", allEntries = true)
     public UserResponse updateCurrentUser(UpdateUserRequest request) {
 
         Long userId = UserContextHolder.getCurrentUserId();
@@ -70,7 +70,6 @@ public class UserServiceImpl implements UserService {
                     return new UserNotFoundException("User not found");
                 });
 
-        // Update fields
         user.setName(request.getName());
         user.setProfileImage(request.getProfileImage());
         user.setBio(request.getBio());
@@ -83,7 +82,9 @@ public class UserServiceImpl implements UserService {
         log.info("User updated successfully and cache evicted for userId={}", userId);
 
         return mapToResponse(user);
+
     }
+
 
 
     @Override

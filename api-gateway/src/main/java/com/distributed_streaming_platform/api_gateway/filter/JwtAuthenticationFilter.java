@@ -1,73 +1,88 @@
 package com.distributed_streaming_platform.api_gateway.filter;
 
-
 import com.distributed_streaming_platform.api_gateway.utils.JwtUtil;
-import lombok.RequiredArgsConstructor;
+import io.jsonwebtoken.JwtException;
+
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpHeaders;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 
-@Component
-@RequiredArgsConstructor
 @Slf4j
-public class JwtAuthenticationFilter implements GlobalFilter {
+@Component
+public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
 
     private final JwtUtil jwtUtil;
 
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        super(Config.class);
+        this.jwtUtil = jwtUtil;
+    }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange,
-                             GatewayFilterChain chain) {
+    public GatewayFilter apply(Config config) {
 
+        return (exchange, chain) -> {
 
-        String path = exchange.getRequest().getURI().getPath();
+            String path = exchange.getRequest().getURI().getPath();
 
-        //allow auth endpoints
+            //  Skip public endpoints
+            if (path.startsWith("/auth") || path.startsWith("/actuator")) {
+                log.info("Skipping authentication for path: {}", path);
+                return chain.filter(exchange);
+            }
 
-        if(path.contains("/auth")){
-            return chain.filter(exchange);
-        }
+            log.info("Authenticating request to: {}", path);
 
-        String authHeader = exchange.getRequest() .
-                getHeaders() .
-                getFirst(HttpHeaders.AUTHORIZATION);
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return onError(exchange, "Missing Authorization Header");
-        }
+            String authHeader = exchange.getRequest()
+                    .getHeaders()
+                    .getFirst("Authorization");
 
-        String token = authHeader.substring(7);
-        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                log.error("Missing Authorization Header");
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
+            }
 
-            String username = jwtUtil.extractUsername(token);
-            Long userId = jwtUtil.extractUserId(token);
-            String role = jwtUtil.extractRole(token);
+            String token = authHeader.substring(7).trim();
 
-            log.info("AUDIT → user={} role={} method={} path={}",
-                    username,
-                    role,
-                    exchange.getRequest().getMethod(),
-                    exchange.getRequest().getURI());
+            try {
+                String username = jwtUtil.extractUsername(token);
+                Long userId = jwtUtil.extractUserId(token);
+                String role = jwtUtil.extractRole(token);
 
-            //  Forward user info to downstream services
-            exchange.getRequest().mutate()
-                    .header("X-User-Email", username)
-                    .header("X-User-Role", role)
-                    .header("X-User-Id", String.valueOf(userId))
-                    .build();
+                if (userId == null) {
+                    log.error("JWT does not contain userId");
+                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return exchange.getResponse().setComplete();
+                }
 
-        } catch (Exception e) {
-            return onError(exchange, "Invalid JWT Token");
-        }
+                // 🔥 Proper mutation (IMPORTANT)
+                ServerWebExchange modifiedExchange = exchange
+                        .mutate()
+                        .request(builder -> builder
+                                .header("X-User-Id", String.valueOf(userId))
+                                .header("X-User-Email", username)
+                                .header("X-User-Role", role)
+                        )
+                        .build();
 
-        return chain.filter(exchange);
-        }
+                log.info("Authenticated → userId={}, email={}, role={}", userId, username, role);
 
-    private Mono<Void> onError(ServerWebExchange exchange, String error) {
-        exchange.getResponse().setStatusCode(org.springframework.http.HttpStatus.UNAUTHORIZED);
-        return exchange.getResponse().setComplete();
+                return chain.filter(modifiedExchange);
+
+            } catch (JwtException e) {
+                log.error("Invalid JWT: {}", e.getMessage());
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
+            }
+        };
     }
+
+    public static class Config {
+    }
+
+
 }
