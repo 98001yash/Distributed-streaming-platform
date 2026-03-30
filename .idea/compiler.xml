@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="discovery-server" />
+        <module name="common-lib" />
       </profile>
       <profile name="Annotation profile for streaming-parent" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />

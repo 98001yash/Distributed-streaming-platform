@@ -17,6 +17,8 @@
         <module>auth-service</module>
         <module>api-gateway</module>
         <module>user-service</module>
+        <module>common-lib</module>
+        <module>common-lib</module>
     </modules>
 
     <!-- COMMON DEPENDENCY VERSIONS -->
