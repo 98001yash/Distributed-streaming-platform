@@ -9,11 +9,13 @@ import com.distributed_streaming_platform.auth_service.enums.Role;
 import com.distributed_streaming_platform.auth_service.exceptions.InvalidCredentialsException;
 import com.distributed_streaming_platform.auth_service.exceptions.ResourceNotFoundException;
 import com.distributed_streaming_platform.auth_service.exceptions.UserAlreadyExistsException;
+import com.distributed_streaming_platform.auth_service.kafka.KafkaProducer;
 import com.distributed_streaming_platform.auth_service.repository.RefreshTokenRepository;
 import com.distributed_streaming_platform.auth_service.repository.UserRepository;
 import com.distributed_streaming_platform.auth_service.security.CustomUserDetailsService;
 import com.distributed_streaming_platform.auth_service.security.JwtService;
 import com.distributed_streaming_platform.auth_service.service.AuthService;
+import com.distributed_streaming_platform.events.UserCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -36,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
+    private final KafkaProducer kafkaProducer;
 
 
     @Override
@@ -58,6 +61,17 @@ public class AuthServiceImpl implements AuthService {
         user = userRepository.save(user);
 
         log.info("User registered successfully with id: {}",user.getId());
+
+
+        // kafka event producer
+        kafkaProducer.sendUseCreatedEvent(
+                UserCreatedEvent.builder()
+                        .userId(user.getId())
+                        .email(user.getEmail())
+                        .build()
+        );
+
+
 
         String accessToken = jwtService.generateToken(user.getEmail(),user.getId(), user.getRole().name());
         String refreshToken = createRefreshToken(user);
