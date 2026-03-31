@@ -1,5 +1,6 @@
 package com.distributed_streaming_platform.content_service.dto.request;
 
+import com.distributed_streaming_platform.content_service.enums.ContentStatus;
 import com.distributed_streaming_platform.content_service.enums.Genre;
 import com.distributed_streaming_platform.content_service.enums.Language;
 import lombok.Data;
@@ -18,6 +19,8 @@ public class UpdateContentRequest {
     private Language language;
 
     private Integer duration;
+
+    private ContentStatus status;
 
     private LocalDate releaseDate;
 

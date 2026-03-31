@@ -95,24 +95,70 @@ public class ContentServiceImpl implements ContentService {
     }
 
     @Override
-    public PagedContentResponse filterContent(ContentFilterRequest filterRequest, int page, int size) {
-        return null;
+    public PagedContentResponse filterContent(ContentFilterRequest filter, int page, int size) {
+
+        log.info("Filtering content with filter={} page={} size={}", filter, page, size);
+
+        Pageable pageable = PageRequest.of(page, size);
+        Specification<Content> spec = buildSpecification(filter);
+
+        Page<Content> contentPage = contentRepository.findAll(spec, pageable);
+        return mapToPagedResponse(contentPage);
     }
+
 
     @Override
     public ContentResponse updateContent(Long contentId, UpdateContentRequest request) {
-        return null;
+
+        Long userId = UserContextHolder.getCurrentUserId();
+        log.info("User {} updating content id={}", userId, contentId);
+
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new ContentNotFoundException(contentId));
+
+        //  Partial updates
+        if (request.getTitle() != null) content.setTitle(request.getTitle());
+        if (request.getDescription() != null) content.setDescription(request.getDescription());
+        if (request.getGenre() != null) content.setGenre(request.getGenre());
+        if (request.getLanguage() != null) content.setLanguage(request.getLanguage());
+        if (request.getDuration() != null) content.setDuration(request.getDuration());
+        if (request.getReleaseDate() != null) content.setReleaseDate(request.getReleaseDate());
+        if (request.getThumbnailUrl() != null) content.setThumbnailUrl(request.getThumbnailUrl());
+        if (request.getTrailerUrl() != null) content.setTrailerUrl(request.getTrailerUrl());
+        if (request.getStatus() != null) content.setStatus(request.getStatus());
+
+        Content updated = contentRepository.save(content);
+
+        log.info("Content updated successfully id={}", updated.getId());
+
+        return mapToResponse(updated);
     }
 
     @Override
     public void deleteContent(Long contentId) {
 
+        Long userId = UserContextHolder.getCurrentUserId();
+        log.info("User {} deleting content id={}", userId, contentId);
+
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new ContentNotFoundException(contentId));
+
+        contentRepository.delete(content);
+        log.info("Content deleted successfully id={}", contentId);
     }
 
     @Override
     public void updateContentStatus(Long contentId, ContentStatus status) {
 
+        log.info("Updating content status id={} status={}", contentId, status);
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new ContentNotFoundException(contentId));
+
+        content.setStatus(status);
+        contentRepository.save(content);
+        log.info("Content status updated id={} newStatus={}", contentId, status);
     }
+
 
 
     private void publishContentCreatedEvent(Content content) {
