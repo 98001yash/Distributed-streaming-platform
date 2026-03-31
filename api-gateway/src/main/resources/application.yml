@@ -49,6 +49,14 @@ spring:
                 redis-rate-limiter.burstCapacity: 10
                 key-resolver: "#{@userKeyResolver}"
 
+
+        - id: content-service-route
+          uri: lb://CONTENT-SERVICE
+          predicates:
+            - Path=/content/**
+          filters:
+            - JwtAuthenticationFilter
+
   data:
     redis:
       host: localhost
