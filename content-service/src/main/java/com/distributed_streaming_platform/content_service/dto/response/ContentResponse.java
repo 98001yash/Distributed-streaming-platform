@@ -1,4 +1,4 @@
-package com.distributed_streaming_platform.content_service.dto;
+package com.distributed_streaming_platform.content_service.dto.response;
 
 import com.distributed_streaming_platform.content_service.enums.ContentStatus;
 import com.distributed_streaming_platform.content_service.enums.ContentType;
