@@ -18,7 +18,6 @@ public class ContentEventProducer {
     public void sendContentCreated(ContentCreatedEvent event){
 
         log.info("Publishing contentCreatedEvent for contentId={}",event.getContentId());
-
         kafkaTemplate.send(
                 kafkaTopics.CONTENT_CREATED,
                 String.valueOf(event.getContentId()),
