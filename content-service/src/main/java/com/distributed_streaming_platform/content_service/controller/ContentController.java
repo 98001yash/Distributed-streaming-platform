@@ -38,7 +38,6 @@ public class ContentController {
         log.info("API: Create content request received title={}", request.getTitle());
 
         ContentResponse response = contentService.createContent(request);
-
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -49,7 +48,6 @@ public class ContentController {
             @PathVariable Long id
     ) {
         log.info("API: Get content by id={}", id);
-
         return ResponseEntity.ok(contentService.getContentById(id));
     }
 
@@ -60,7 +58,6 @@ public class ContentController {
             @RequestParam(defaultValue = "10") int size
     ) {
         log.info("API: Get all content page={} size={}", page, size);
-
         return ResponseEntity.ok(contentService.getAllContent(page, size));
     }
 
@@ -112,7 +109,6 @@ public class ContentController {
         log.info("API: Delete content id={}", id);
 
         contentService.deleteContent(id);
-
         return ResponseEntity.noContent().build();
     }
 
@@ -125,9 +121,7 @@ public class ContentController {
             @RequestParam ContentStatus status
     ) {
         log.info("API: Update content status id={} status={}", id, status);
-
         contentService.updateContentStatus(id, status);
-
         return ResponseEntity.ok().build();
     }
 }
