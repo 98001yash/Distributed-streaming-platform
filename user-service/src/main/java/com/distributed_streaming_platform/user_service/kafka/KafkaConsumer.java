@@ -15,7 +15,10 @@ public class KafkaConsumer {
 
     private final UserService userService;
 
-    @KafkaListener(topics = "user-created", groupId = "user-service-group")
+    @KafkaListener(topics = "user-created",
+            groupId = "user-service-group",
+            containerFactory = "kafkaListenerContainerFactory"
+    )
     public void consume(UserCreatedEvent event){
 
         log.info("Received UserCreatedEvent for userId={}",event.getUserId());
