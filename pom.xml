@@ -11,21 +11,20 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
-    <!-- CHILD MODULES -->
+
     <modules>
         <module>discovery-server</module>
         <module>auth-service</module>
         <module>api-gateway</module>
         <module>user-service</module>
         <module>common-lib</module>
-        <module>common-lib</module>
+        <module>content-service</module>
     </modules>
 
-    <!-- COMMON DEPENDENCY VERSIONS -->
+
     <dependencyManagement>
         <dependencies>
 
-            <!-- Spring Boot -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
