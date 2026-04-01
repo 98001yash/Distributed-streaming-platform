@@ -1,7 +1,7 @@
 package com.distributed_streaming_platform.content_service.service.Impl;
 
 
-import com.distributed_streaming_platform.ContentCreatedEvent;
+import com.distributed_streaming_platform.events.ContentCreatedEvent;
 import com.distributed_streaming_platform.content_service.auth.UserContextHolder;
 import com.distributed_streaming_platform.content_service.dto.request.ContentFilterRequest;
 import com.distributed_streaming_platform.content_service.dto.request.CreateContentRequest;

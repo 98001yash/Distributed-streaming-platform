@@ -1,4 +1,4 @@
-package com.distributed_streaming_platform;
+package com.distributed_streaming_platform.events;
 
 
 import lombok.AllArgsConstructor;

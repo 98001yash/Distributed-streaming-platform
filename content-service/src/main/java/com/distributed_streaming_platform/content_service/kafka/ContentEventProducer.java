@@ -1,7 +1,7 @@
 package com.distributed_streaming_platform.content_service.kafka;
 
 
-import com.distributed_streaming_platform.ContentCreatedEvent;
+import com.distributed_streaming_platform.events.ContentCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
