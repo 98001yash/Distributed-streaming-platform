@@ -29,7 +29,6 @@ public class ContentController {
     private final ContentService contentService;
 
 
-
     @RoleAllowed("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ContentResponse> createContent(
@@ -40,8 +39,6 @@ public class ContentController {
         ContentResponse response = contentService.createContent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
-
 
     @GetMapping("/{id}")
     public ResponseEntity<ContentResponse> getContentById(
