@@ -1,10 +1,12 @@
 package com.distributed_streaming_platform.content_ingestion_service.service.Impl;
 
 
+import com.distributed_streaming_platform.content_ingestion_service.auth.UserContextHolder;
 import com.distributed_streaming_platform.content_ingestion_service.dtos.VideoUploadResponse;
 import com.distributed_streaming_platform.content_ingestion_service.entity.VideoAsset;
 import com.distributed_streaming_platform.content_ingestion_service.enums.UploadStatus;
 import com.distributed_streaming_platform.content_ingestion_service.exceptions.*;
+import com.distributed_streaming_platform.content_ingestion_service.kafka.VideoEventProducer;
 import com.distributed_streaming_platform.content_ingestion_service.repository.VideoAssetRepository;
 import com.distributed_streaming_platform.content_ingestion_service.service.StorageService;
 import com.distributed_streaming_platform.content_ingestion_service.service.VideoUploadService;
