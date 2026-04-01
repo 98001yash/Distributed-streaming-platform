@@ -19,6 +19,7 @@
         <module>user-service</module>
         <module>common-lib</module>
         <module>content-service</module>
+        <module>content-ingestion-service</module>
     </modules>
 
 
