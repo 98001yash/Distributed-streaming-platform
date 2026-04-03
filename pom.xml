@@ -20,6 +20,7 @@
         <module>common-lib</module>
         <module>content-service</module>
         <module>content-ingestion-service</module>
+        <module>video-processing-service</module>
     </modules>
 
 
