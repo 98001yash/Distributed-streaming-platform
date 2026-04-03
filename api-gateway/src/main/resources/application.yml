@@ -57,6 +57,13 @@ spring:
           filters:
             - JwtAuthenticationFilter
 
+        - id: content-ingestion-service-route
+          uri: lb://CONTENT-INGESTION-SERVICE
+          predicates:
+            - Path=/ingestion/**
+          filters:
+            - JwtAuthenticationFilter
+
   data:
     redis:
       host: localhost
