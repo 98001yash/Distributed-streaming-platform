@@ -26,7 +26,7 @@ public class ProcessedVideo {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String videoId;
+    private Long contentId;
 
     @Column(nullable = false)
     private String sourceUrl;

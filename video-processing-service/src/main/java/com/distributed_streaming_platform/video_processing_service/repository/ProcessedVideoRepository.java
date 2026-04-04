@@ -7,10 +7,8 @@ import java.util.Optional;
 
 public interface ProcessedVideoRepository extends JpaRepository<ProcessedVideo, Long> {
 
-    Optional<ProcessedVideo> findByVideoId(String videoId);
+    Optional<ProcessedVideo> findByContentId(Long contentId);
 
-    boolean existsByVideoId(String videoId);
-
-
-    Optional<ProcessedVideo> findByVideoIdAndStatus(String videoId, ProcessingStatus status);
+    boolean existsByContentId(Long contentId);
+    Optional<ProcessedVideo> findByContentIdAndStatus(Long contentId, ProcessingStatus status);
 }
