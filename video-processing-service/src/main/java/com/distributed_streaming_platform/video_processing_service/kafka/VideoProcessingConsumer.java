@@ -29,7 +29,6 @@ public class VideoProcessingConsumer {
 
     @KafkaListener(
             topics = "video-uploaded",
-            groupId = "video-processing-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
     public void consume(VideoUploadedEvent event) {
