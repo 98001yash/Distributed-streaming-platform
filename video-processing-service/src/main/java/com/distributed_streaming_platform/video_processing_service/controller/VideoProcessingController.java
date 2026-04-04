@@ -27,9 +27,9 @@ public class VideoProcessingController {
                 .eventId(UUID.randomUUID().toString())
                 .eventTime(LocalDateTime.now())
                 .contentId(contentId)
-                .objectKey("manual/" + contentId)
-                .storageUrl("http://localhost:9000/videos/manual/" + contentId)
-                .fileName("video.mp4")
+                .objectKey("videos/" + contentId + ".mp4") // consistent
+                .storageUrl("http://localhost:9000/videos/" + contentId + ".mp4") //  correct
+                .fileName(contentId + ".mp4")
                 .build();
 
         videoProcessingService.processVideo(event);
