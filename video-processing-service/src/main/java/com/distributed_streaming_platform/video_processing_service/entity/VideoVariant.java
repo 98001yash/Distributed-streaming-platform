@@ -6,7 +6,12 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "video_variants")
+@Table(
+        name = "video_variants",
+        indexes = {
+                @Index(name = "idx_processed_video_id", columnList = "processed_video_id")
+        }
+)
 @Getter
 @Setter
 @Builder

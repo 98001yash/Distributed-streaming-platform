@@ -8,12 +8,17 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
-@Table(name = "processed_videos")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(
+        name = "processed_videos",
+        indexes = {
+                @Index(name = "idx_video_id", columnList = "videoId")
+        }
+)
 public class ProcessedVideo {
 
     @Id
