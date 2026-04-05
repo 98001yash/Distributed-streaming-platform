@@ -30,13 +30,11 @@ public class VideoProcessingService {
 
         log.info("Processing video for contentId={}", event.getContentId());
 
-        //  Idempotency
         if (processedVideoRepository.existsByContentId(event.getContentId())) {
             log.warn("Already processed contentId={}", event.getContentId());
             return;
         }
 
-        //  Create DB record
         ProcessedVideo processedVideo = ProcessedVideo.builder()
                 .contentId(event.getContentId())
                 .sourceUrl(event.getStorageUrl())
@@ -46,10 +44,9 @@ public class VideoProcessingService {
         processedVideo = processedVideoRepository.save(processedVideo);
 
         try {
-            //  REAL PROCESSING
-            List<VideoVariant> variants = processWithFFmpeg(processedVideo, event);
 
-            videoVariantRepository.saveAll(variants);
+            //  USE HLS ONLY
+            processHLS(processedVideo, event);
 
             processedVideo.setStatus(ProcessingStatus.COMPLETED);
             processedVideoRepository.save(processedVideo);
@@ -66,53 +63,6 @@ public class VideoProcessingService {
             throw new RuntimeException("Video processing failed", e);
         }
     }
-
-    /**
-     *  CORE PROCESSING LOGIC
-     */
-    private List<VideoVariant> processWithFFmpeg(
-            ProcessedVideo processedVideo,
-            VideoUploadedEvent event
-    ) throws Exception {
-
-        //  Step 1: Download original video
-        File inputFile = storageService.downloadToLocal(event.getObjectKey());
-
-        List<VideoVariant> variants = new ArrayList<>();
-
-        try {
-
-            for (VideoQuality quality : VideoQuality.values()) {
-
-                //  Step 2: Transcode
-                File outputFile = ffmpegService.transcode(inputFile, quality.name());
-
-                //  Step 3: Build correct path
-                String objectKey = buildVariantObjectKey(event.getObjectKey(), quality);
-
-                // ☁ Step 4: Upload to MinIO
-                String url = storageService.uploadFile(objectKey, outputFile);
-
-                //  Step 5: Save entity
-                variants.add(VideoVariant.builder()
-                        .processedVideo(processedVideo)
-                        .quality(quality)
-                        .url(url)
-                        .size(outputFile.length())
-                        .build());
-
-                //  Cleanup output file
-                outputFile.delete();
-            }
-
-        } finally {
-            //  Cleanup input file
-            inputFile.delete();
-        }
-
-        return variants;
-    }
-
     /**
      *  Builds variant path using SAME structure as ingestion
      */
@@ -131,5 +81,57 @@ public class VideoProcessingService {
     public List<VideoVariant> getVariants(Long contentId) {
         ProcessedVideo video = getByContentId(contentId);
         return videoVariantRepository.findByProcessedVideoId(video.getId());
+    }
+
+    private void processHLS(
+            ProcessedVideo processedVideo,
+            VideoUploadedEvent event
+    ) throws Exception {
+
+        File inputFile = storageService.downloadToLocal(event.getObjectKey());
+
+        try {
+
+            for (VideoQuality quality : VideoQuality.values()) {
+
+                String tempDir = System.getProperty("java.io.tmpdir")
+                        + "\\hls-" + event.getContentId() + "-" + quality.name();
+
+                File folder = ffmpegService.generateHLS(inputFile, quality.name(), tempDir);
+
+                String baseObjectPath = "hls/" + event.getContentId() + "/" + quality.name();
+
+                String playlistUrl = null;
+
+                for (File file : folder.listFiles()) {
+
+                    String objectKey = baseObjectPath + "/" + file.getName();
+
+                    String url = storageService.uploadFile(objectKey, file);
+
+                    // 🎯 Save ONLY playlist
+                    if (file.getName().endsWith(".m3u8")) {
+                        playlistUrl = url;
+                    }
+
+                    file.delete(); // cleanup
+                }
+
+                // 💾 Save ONE entry per quality
+                videoVariantRepository.save(
+                        VideoVariant.builder()
+                                .processedVideo(processedVideo)
+                                .quality(quality)
+                                .url(playlistUrl)
+                                .size(0L)
+                                .build()
+                );
+
+                folder.delete();
+            }
+
+        } finally {
+            inputFile.delete();
+        }
     }
 }

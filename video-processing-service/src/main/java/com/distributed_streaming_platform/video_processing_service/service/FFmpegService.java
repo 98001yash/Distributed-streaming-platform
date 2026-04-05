@@ -46,4 +46,38 @@ public class FFmpegService {
             default -> throw new IllegalArgumentException("Invalid quality");
         };
     }
+
+
+    public File generateHLS(File inputFile, String resolution, String outputDir)
+            throws IOException, InterruptedException {
+
+        File dir = new File(outputDir);
+        if (!dir.exists()) dir.mkdirs();
+
+        String playlist = outputDir + "\\" + resolution + ".m3u8";
+        String segments = outputDir + "\\" + resolution + "_%03d.ts";
+
+        ProcessBuilder pb = new ProcessBuilder(
+                "C:\\ffmpeg\\bin\\ffmpeg.exe",
+                "-i", inputFile.getAbsolutePath(),
+                "-vf", "scale=" + getResolution(resolution),
+                "-codec:v", "libx264",
+                "-codec:a", "aac",
+                "-hls_time", "10",
+                "-hls_list_size", "0",
+                "-hls_segment_filename", segments,
+                playlist
+        );
+
+        pb.inheritIO();
+
+        Process process = pb.start();
+        int exit = process.waitFor();
+
+        if (exit != 0) {
+            throw new RuntimeException("HLS generation failed for " + resolution);
+        }
+
+        return dir;
+    }
 }
