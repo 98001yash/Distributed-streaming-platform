@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -26,39 +27,17 @@ public class StorageServiceImpl implements StorageService {
     private String minioUrl;
 
     @Override
-    public File downloadToLocal(String objectKey) {
+    public String uploadFile(String objectKey, MultipartFile file) {
 
         try {
-            File tempFile = File.createTempFile("video-", ".mp4");
-
-            try (InputStream stream = minioClient.getObject(
-                    GetObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(objectKey)
-                            .build()
-            )) {
-                Files.copy(stream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            return tempFile;
-
-        } catch (Exception ex) {
-            log.error("Download failed objectKey={}", objectKey, ex);
-            throw new RuntimeException("Failed to download file", ex);
-        }
-    }
-
-    @Override
-    public String uploadFile(String objectKey, File file) {
-
-        try (InputStream stream = new FileInputStream(file)) {
+            log.info("Uploading file to MinIO objectKey={}", objectKey);
 
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectKey)
-                            .stream(stream, file.length(), -1)
-                            .contentType("video/mp4")
+                            .stream(file.getInputStream(), file.getSize(), -1)
+                            .contentType(file.getContentType())
                             .build()
             );
 

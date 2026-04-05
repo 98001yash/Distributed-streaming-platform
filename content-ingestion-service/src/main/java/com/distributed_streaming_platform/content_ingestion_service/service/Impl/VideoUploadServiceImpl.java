@@ -61,7 +61,7 @@ public class VideoUploadServiceImpl implements VideoUploadService {
         String storageUrl;
 
         try {
-            storageUrl = storageService.uploadFile(objectKey, (File) file);
+            storageUrl = storageService.uploadFile(objectKey,file);
         } catch (Exception ex) {
             log.error("Storage failed for contentId={}", contentId, ex);
             throw new StorageException("Failed to upload file", ex);
