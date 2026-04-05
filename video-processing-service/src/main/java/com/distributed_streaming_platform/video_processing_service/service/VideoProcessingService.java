@@ -22,7 +22,6 @@ public class VideoProcessingService {
 
     private final ProcessedVideoRepository processedVideoRepository;
     private final VideoVariantRepository videoVariantRepository;
-
     private final FFmpegService ffmpegService;
     private final StorageService storageService;
 
@@ -30,11 +29,13 @@ public class VideoProcessingService {
 
         log.info("Processing video for contentId={}", event.getContentId());
 
+        // Idempotency
         if (processedVideoRepository.existsByContentId(event.getContentId())) {
             log.warn("Already processed contentId={}", event.getContentId());
             return;
         }
 
+        //  Create processing record
         ProcessedVideo processedVideo = ProcessedVideo.builder()
                 .contentId(event.getContentId())
                 .sourceUrl(event.getStorageUrl())
@@ -45,7 +46,7 @@ public class VideoProcessingService {
 
         try {
 
-            //  USE HLS ONLY
+            //  MAIN LOGIC
             processHLS(processedVideo, event);
 
             processedVideo.setStatus(ProcessingStatus.COMPLETED);
@@ -63,14 +64,76 @@ public class VideoProcessingService {
             throw new RuntimeException("Video processing failed", e);
         }
     }
+
     /**
-     *  Builds variant path using SAME structure as ingestion
+     *  CORE HLS PIPELINE
      */
-    private String buildVariantObjectKey(String objectKey, VideoQuality quality) {
+    private void processHLS(
+            ProcessedVideo processedVideo,
+            VideoUploadedEvent event
+    ) throws Exception {
 
-        String basePath = objectKey.substring(0, objectKey.lastIndexOf("/") + 1);
+        //  Download original video
+        File inputFile = storageService.downloadToLocal(event.getObjectKey());
 
-        return basePath + quality.name().toLowerCase() + ".mp4";
+        try {
+
+            for (VideoQuality quality : VideoQuality.values()) {
+
+                log.info("Processing quality={} for contentId={}", quality, event.getContentId());
+
+                // Temp folder per quality
+                String tempDir = System.getProperty("java.io.tmpdir")
+                        + "\\hls-" + event.getContentId() + "-" + quality.name();
+
+                File folder = ffmpegService.generateHLS(inputFile, quality.name(), tempDir);
+
+                String baseObjectPath = "hls/" + event.getContentId() + "/" + quality.name();
+
+                String playlistUrl = null;
+
+                List<File> filesToDelete = new ArrayList<>();
+
+                //  Upload ALL generated files
+                for (File file : folder.listFiles()) {
+
+                    String objectKey = baseObjectPath + "/" + file.getName();
+
+                    log.info("Uploading file to MinIO: {}", objectKey);
+
+                    String url = storageService.uploadFile(objectKey, file);
+
+                    // Save ONLY playlist URL
+                    if (file.getName().endsWith(".m3u8")) {
+                        playlistUrl = url;
+                    }
+
+                    filesToDelete.add(file);
+                }
+
+                //  DELETE FILES AFTER ALL UPLOADS
+                for (File file : filesToDelete) {
+                    file.delete();
+                }
+
+                folder.delete();
+
+                //  Save ONE DB entry per quality
+                videoVariantRepository.save(
+                        VideoVariant.builder()
+                                .processedVideo(processedVideo)
+                                .quality(quality)
+                                .url(playlistUrl)
+                                .size(0L)
+                                .build()
+                );
+
+                log.info("Completed upload for quality={}", quality);
+            }
+
+        } finally {
+            inputFile.delete(); // cleanup input
+        }
     }
 
     public ProcessedVideo getByContentId(Long contentId) {
@@ -81,57 +144,5 @@ public class VideoProcessingService {
     public List<VideoVariant> getVariants(Long contentId) {
         ProcessedVideo video = getByContentId(contentId);
         return videoVariantRepository.findByProcessedVideoId(video.getId());
-    }
-
-    private void processHLS(
-            ProcessedVideo processedVideo,
-            VideoUploadedEvent event
-    ) throws Exception {
-
-        File inputFile = storageService.downloadToLocal(event.getObjectKey());
-
-        try {
-
-            for (VideoQuality quality : VideoQuality.values()) {
-
-                String tempDir = System.getProperty("java.io.tmpdir")
-                        + "\\hls-" + event.getContentId() + "-" + quality.name();
-
-                File folder = ffmpegService.generateHLS(inputFile, quality.name(), tempDir);
-
-                String baseObjectPath = "hls/" + event.getContentId() + "/" + quality.name();
-
-                String playlistUrl = null;
-
-                for (File file : folder.listFiles()) {
-
-                    String objectKey = baseObjectPath + "/" + file.getName();
-
-                    String url = storageService.uploadFile(objectKey, file);
-
-                    // 🎯 Save ONLY playlist
-                    if (file.getName().endsWith(".m3u8")) {
-                        playlistUrl = url;
-                    }
-
-                    file.delete(); // cleanup
-                }
-
-                // 💾 Save ONE entry per quality
-                videoVariantRepository.save(
-                        VideoVariant.builder()
-                                .processedVideo(processedVideo)
-                                .quality(quality)
-                                .url(playlistUrl)
-                                .size(0L)
-                                .build()
-                );
-
-                folder.delete();
-            }
-
-        } finally {
-            inputFile.delete();
-        }
     }
 }
