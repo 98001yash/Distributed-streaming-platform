@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,13 +30,11 @@ public class VideoProcessingService {
 
         log.info("Processing video for contentId={}", event.getContentId());
 
-        // Idempotency
         if (processedVideoRepository.existsByContentId(event.getContentId())) {
             log.warn("Already processed contentId={}", event.getContentId());
             return;
         }
 
-        //  Create processing record
         ProcessedVideo processedVideo = ProcessedVideo.builder()
                 .contentId(event.getContentId())
                 .sourceUrl(event.getStorageUrl())
@@ -46,7 +45,7 @@ public class VideoProcessingService {
 
         try {
 
-            //  MAIN LOGIC
+            // 🔥 HLS PROCESSING
             processHLS(processedVideo, event);
 
             processedVideo.setStatus(ProcessingStatus.COMPLETED);
@@ -65,24 +64,15 @@ public class VideoProcessingService {
         }
     }
 
-    /**
-     *  CORE HLS PIPELINE
-     */
-    private void processHLS(
-            ProcessedVideo processedVideo,
-            VideoUploadedEvent event
-    ) throws Exception {
+    private void processHLS(ProcessedVideo processedVideo, VideoUploadedEvent event) throws Exception {
 
-        //  Download original video
         File inputFile = storageService.downloadToLocal(event.getObjectKey());
 
         try {
 
+            // 🔥 STEP 1: PROCESS EACH QUALITY
             for (VideoQuality quality : VideoQuality.values()) {
 
-                log.info("Processing quality={} for contentId={}", quality, event.getContentId());
-
-                // Temp folder per quality
                 String tempDir = System.getProperty("java.io.tmpdir")
                         + "\\hls-" + event.getContentId() + "-" + quality.name();
 
@@ -94,7 +84,6 @@ public class VideoProcessingService {
 
                 List<File> filesToDelete = new ArrayList<>();
 
-                //  Upload ALL generated files
                 for (File file : folder.listFiles()) {
 
                     String objectKey = baseObjectPath + "/" + file.getName();
@@ -103,7 +92,6 @@ public class VideoProcessingService {
 
                     String url = storageService.uploadFile(objectKey, file);
 
-                    // Save ONLY playlist URL
                     if (file.getName().endsWith(".m3u8")) {
                         playlistUrl = url;
                     }
@@ -111,14 +99,13 @@ public class VideoProcessingService {
                     filesToDelete.add(file);
                 }
 
-                //  DELETE FILES AFTER ALL UPLOADS
+                // cleanup
                 for (File file : filesToDelete) {
                     file.delete();
                 }
-
                 folder.delete();
 
-                //  Save ONE DB entry per quality
+                // save DB
                 videoVariantRepository.save(
                         VideoVariant.builder()
                                 .processedVideo(processedVideo)
@@ -127,13 +114,75 @@ public class VideoProcessingService {
                                 .size(0L)
                                 .build()
                 );
-
-                log.info("Completed upload for quality={}", quality);
             }
 
+            // 🔥 STEP 2: CREATE MASTER PLAYLIST
+            String masterDir = System.getProperty("java.io.tmpdir")
+                    + "\\hls-master-" + event.getContentId();
+
+            new File(masterDir).mkdirs();
+
+            File masterFile = createMasterPlaylist(event.getContentId(), masterDir);
+
+            // 🔥 STEP 3: UPLOAD MASTER PLAYLIST
+            String masterObjectKey = "hls/" + event.getContentId() + "/master.m3u8";
+
+            String masterUrl = storageService.uploadFile(masterObjectKey, masterFile);
+
+            log.info("Master playlist uploaded: {}", masterUrl);
+
+            // cleanup
+            masterFile.delete();
+            new File(masterDir).delete();
+
+            // 🔥 OPTIONAL: store master URL (BEST PRACTICE)
+            processedVideo.setMasterPlaylistUrl(masterUrl);
+            processedVideoRepository.save(processedVideo);
+
         } finally {
-            inputFile.delete(); // cleanup input
+            inputFile.delete();
         }
+    }
+
+    private File createMasterPlaylist(Long contentId, String baseDir) throws Exception {
+
+        File masterFile = new File(baseDir + "\\master.m3u8");
+
+        StringBuilder content = new StringBuilder();
+        content.append("#EXTM3U\n\n");
+
+        for (VideoQuality quality : VideoQuality.values()) {
+
+            String resolution = switch (quality) {
+                case P240 -> "426x240";
+                case P480 -> "854x480";
+                case P720 -> "1280x720";
+                case P1080 -> "1920x1080";
+            };
+
+            int bandwidth = switch (quality) {
+                case P240 -> 800000;
+                case P480 -> 1400000;
+                case P720 -> 2800000;
+                case P1080 -> 5000000;
+            };
+
+            content.append("#EXT-X-STREAM-INF:BANDWIDTH=")
+                    .append(bandwidth)
+                    .append(",RESOLUTION=")
+                    .append(resolution)
+                    .append("\n")
+                    .append(quality.name())
+                    .append("/")
+                    .append(quality.name())
+                    .append(".m3u8\n\n");
+        }
+
+        try (FileWriter writer = new FileWriter(masterFile)) {
+            writer.write(content.toString());
+        }
+
+        return masterFile;
     }
 
     public ProcessedVideo getByContentId(Long contentId) {

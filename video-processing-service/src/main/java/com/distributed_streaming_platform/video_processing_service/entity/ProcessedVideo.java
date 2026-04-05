@@ -36,8 +36,11 @@ public class ProcessedVideo {
 
     private String errorMessage;
 
+    private String masterPlaylistUrl;
+
     private Instant createdAt;
     private Instant updatedAt;
+
 
     @PrePersist
     public void prePersist() {
