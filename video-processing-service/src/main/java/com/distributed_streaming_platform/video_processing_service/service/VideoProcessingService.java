@@ -81,4 +81,5 @@ public class VideoProcessingService {
         ProcessedVideo video = getByContentId(contentId);
         return videoVariantRepository.findByProcessedVideoId(video.getId());
     }
+
 }
