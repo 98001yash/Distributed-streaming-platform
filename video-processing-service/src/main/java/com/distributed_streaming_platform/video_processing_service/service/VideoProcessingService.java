@@ -45,7 +45,7 @@ public class VideoProcessingService {
 
         try {
 
-            // 🔥 HLS PROCESSING
+            //  HLS PROCESSING
             processHLS(processedVideo, event);
 
             processedVideo.setStatus(ProcessingStatus.COMPLETED);
@@ -70,7 +70,7 @@ public class VideoProcessingService {
 
         try {
 
-            // 🔥 STEP 1: PROCESS EACH QUALITY
+            //  STEP 1: PROCESS EACH QUALITY
             for (VideoQuality quality : VideoQuality.values()) {
 
                 String tempDir = System.getProperty("java.io.tmpdir")
@@ -116,7 +116,7 @@ public class VideoProcessingService {
                 );
             }
 
-            // 🔥 STEP 2: CREATE MASTER PLAYLIST
+            //  STEP 2: CREATE MASTER PLAYLIST
             String masterDir = System.getProperty("java.io.tmpdir")
                     + "\\hls-master-" + event.getContentId();
 
@@ -124,7 +124,7 @@ public class VideoProcessingService {
 
             File masterFile = createMasterPlaylist(event.getContentId(), masterDir);
 
-            // 🔥 STEP 3: UPLOAD MASTER PLAYLIST
+            //  STEP 3: UPLOAD MASTER PLAYLIST
             String masterObjectKey = "hls/" + event.getContentId() + "/master.m3u8";
 
             String masterUrl = storageService.uploadFile(masterObjectKey, masterFile);
@@ -135,7 +135,7 @@ public class VideoProcessingService {
             masterFile.delete();
             new File(masterDir).delete();
 
-            // 🔥 OPTIONAL: store master URL (BEST PRACTICE)
+            // OPTIONAL: store master URL (BEST PRACTICE)
             processedVideo.setMasterPlaylistUrl(masterUrl);
             processedVideoRepository.save(processedVideo);
 
