@@ -17,7 +17,7 @@ public class FFmpegService {
         String outputPath = inputFile.getParent() + "\\" + resolution + ".mp4";
 
         ProcessBuilder processBuilder = new ProcessBuilder(
-                "ffmpeg",
+                "C:\\ffmpeg\\bin\\ffmpeg.exe",
                 "-i", inputFile.getAbsolutePath(),
                 "-vf", "scale=" + getResolution(resolution),
                 "-preset", "fast",
