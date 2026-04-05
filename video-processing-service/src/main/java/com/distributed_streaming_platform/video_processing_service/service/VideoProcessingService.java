@@ -82,4 +82,11 @@ public class VideoProcessingService {
         return videoVariantRepository.findByProcessedVideoId(video.getId());
     }
 
+
+    private String buildVariantObjectKey(String objectKey, VideoQuality quality) {
+
+        String basePath = objectKey.substring(0, objectKey.lastIndexOf("/") + 1);
+        return basePath + quality.name().toLowerCase() + ".mp4";
+    }
+
 }

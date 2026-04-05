@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -60,7 +61,7 @@ public class VideoUploadServiceImpl implements VideoUploadService {
         String storageUrl;
 
         try {
-            storageUrl = storageService.uploadFile(objectKey, file);
+            storageUrl = storageService.uploadFile(objectKey, (File) file);
         } catch (Exception ex) {
             log.error("Storage failed for contentId={}", contentId, ex);
             throw new StorageException("Failed to upload file", ex);
@@ -112,4 +113,5 @@ public class VideoUploadServiceImpl implements VideoUploadService {
 
         videoEventProducer.sendVideoUploadedEvent(event);
     }
+
 }

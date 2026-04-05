@@ -1,20 +1,21 @@
 package com.distributed_streaming_platform.content_ingestion_service.service.Impl;
 
-import com.distributed_streaming_platform.content_ingestion_service.exceptions.StorageException;
+
 import com.distributed_streaming_platform.content_ingestion_service.service.StorageService;
 import io.minio.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class StorageServiceImpl implements StorageService {
-
 
     private final MinioClient minioClient;
 
@@ -24,85 +25,48 @@ public class StorageServiceImpl implements StorageService {
     @Value("${minio.url}")
     private String minioUrl;
 
-
-
     @Override
-    public String uploadFile(String objectKey, MultipartFile file) {
+    public File downloadToLocal(String objectKey) {
 
         try {
-            log.info("Uploading file to MinIO objectKey={}", objectKey);
+            File tempFile = File.createTempFile("video-", ".mp4");
 
-            ensureBucketExists();
+            try (InputStream stream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .build()
+            )) {
+                Files.copy(stream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            return tempFile;
+
+        } catch (Exception ex) {
+            log.error("Download failed objectKey={}", objectKey, ex);
+            throw new RuntimeException("Failed to download file", ex);
+        }
+    }
+
+    @Override
+    public String uploadFile(String objectKey, File file) {
+
+        try (InputStream stream = new FileInputStream(file)) {
 
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectKey)
-                            .stream(file.getInputStream(), file.getSize(), -1)
-                            .contentType(file.getContentType())
+                            .stream(stream, file.length(), -1)
+                            .contentType("video/mp4")
                             .build()
             );
 
-            String fileUrl = getFileUrl(objectKey);
-
-            log.info("File uploaded successfully objectKey={}", objectKey);
-
-            return fileUrl;
+            return String.format("%s/%s/%s", minioUrl, bucketName, objectKey);
 
         } catch (Exception ex) {
-            log.error("MinIO upload failed objectKey={}", objectKey, ex);
-            throw new StorageException("Failed to upload file", ex);
-        }
-    }
-
-
-    @Override
-    public void deleteFile(String objectKey) {
-
-        try {
-            log.info("Deleting file from MinIO objectKey={}", objectKey);
-
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(objectKey)
-                            .build()
-            );
-
-        } catch (Exception ex) {
-            log.error("Failed to delete file objectKey={}", objectKey, ex);
-            throw new StorageException("Failed to delete file", ex);
-        }
-    }
-
-    @Override
-    public String getFileUrl(String objectKey) {
-        return String.format("%s/%s/%s", minioUrl, bucketName, objectKey);
-    }
-
-
-    private void ensureBucketExists() {
-
-        try {
-            boolean exists = minioClient.bucketExists(
-                    BucketExistsArgs.builder()
-                            .bucket(bucketName)
-                            .build()
-            );
-
-            if (!exists) {
-                log.info("Bucket not found, creating bucket={}", bucketName);
-
-                minioClient.makeBucket(
-                        MakeBucketArgs.builder()
-                                .bucket(bucketName)
-                                .build()
-                );
-            }
-
-        } catch (Exception ex) {
-            log.error("Bucket check/create failed", ex);
-            throw new StorageException("Failed to initialize bucket", ex);
+            log.error("Upload failed objectKey={}", objectKey, ex);
+            throw new RuntimeException("Failed to upload file", ex);
         }
     }
 }
