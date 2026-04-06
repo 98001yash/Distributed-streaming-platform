@@ -17,11 +17,6 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar" />
         </processorPath>
         <module name="api-gateway" />
-        <module name="content-ingestion-service" />
-        <module name="video-processing-service" />
-        <module name="auth-service" />
-        <module name="user-service" />
-        <module name="content-service" />
       </profile>
     </annotationProcessing>
   </component>
@@ -32,6 +27,7 @@
       <module name="content-ingestion-service" options="-parameters" />
       <module name="content-service" options="-parameters" />
       <module name="discovery-server" options="-parameters" />
+      <module name="streaming-service" options="-parameters" />
       <module name="user-service" options="-parameters" />
       <module name="video-processing-service" options="-parameters" />
     </option>
