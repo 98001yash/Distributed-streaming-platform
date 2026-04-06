@@ -64,6 +64,14 @@ spring:
           filters:
             - JwtAuthenticationFilter
 
+
+        - id: streaming-service-route
+          uri: lb://STREAMING-SERVICE
+          predicates:
+            - Path=/streaming/**
+          filters:
+            - JwtAuthenticationFilter
+
   data:
     redis:
       host: localhost
