@@ -1,8 +1,6 @@
 package com.distributed_streaming_platform.streaming_service.service;
 
-
-
-
+import com.distributed_streaming_platform.events.VideoStartedEvent;
 import com.distributed_streaming_platform.streaming_service.auth.UserContextHolder;
 import com.distributed_streaming_platform.streaming_service.dtos.StreamResponse;
 import com.distributed_streaming_platform.streaming_service.entity.ProcessedVideo;
@@ -10,6 +8,7 @@ import com.distributed_streaming_platform.streaming_service.exceptions.StorageAc
 import com.distributed_streaming_platform.streaming_service.exceptions.UnauthorizedAccessException;
 import com.distributed_streaming_platform.streaming_service.exceptions.VideoNotFoundException;
 import com.distributed_streaming_platform.streaming_service.exceptions.VideoNotReadyException;
+import com.distributed_streaming_platform.streaming_service.kafka.AnalyticsEventProducer;
 import com.distributed_streaming_platform.streaming_service.repository.ProcessedVideoRepository;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
@@ -18,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -26,6 +27,7 @@ public class StreamingService {
 
     private final ProcessedVideoRepository processedVideoRepository;
     private final MinioClient minioClient;
+    private final AnalyticsEventProducer analyticsEventProducer;
 
     @Value("${minio.bucket}")
     private String bucket;
@@ -44,7 +46,7 @@ public class StreamingService {
             throw new VideoNotReadyException(contentId);
         }
 
-        // STEP 4: Ownership check (CRITICAL)
+        //  STEP 4: Ownership check
         if (!isOwnerOrAdmin(video, userId)) {
             throw new UnauthorizedAccessException();
         }
@@ -55,6 +57,9 @@ public class StreamingService {
         //  STEP 6: Generate signed URL
         String signedUrl = generateSignedUrl(objectKey);
 
+        //  STEP 7: Emit analytics event (CORRECT PLACE)
+        publishVideoStartedEvent(userId, contentId);
+
         return StreamResponse.builder()
                 .contentId(contentId)
                 .streamUrl(signedUrl)
@@ -62,15 +67,10 @@ public class StreamingService {
     }
 
     /**
-     *   Ownership / Admin check
+     * Ownership / Admin check
      */
     private boolean isOwnerOrAdmin(ProcessedVideo video, Long userId) {
-        //  Owner
-        if (video.getUploadedBy() != null && video.getUploadedBy().equals(userId)) {
-            return true;
-        }
-        // Admin (handled by RBAC annotation at controller level)
-        return false;
+        return video.getUploadedBy() != null && video.getUploadedBy().equals(userId);
     }
 
     /**
@@ -99,5 +99,20 @@ public class StreamingService {
         } catch (Exception e) {
             throw new StorageAccessException("Failed to generate signed URL", e);
         }
+    }
+
+    /**
+     *  Publish analytics event
+     */
+    private void publishVideoStartedEvent(Long userId, Long contentId) {
+
+        VideoStartedEvent event = VideoStartedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .eventTime(LocalDateTime.now())
+                .userId(userId)
+                .contentId(contentId)
+                .build();
+
+        analyticsEventProducer.sendVideoStartedEvent(event);
     }
 }
