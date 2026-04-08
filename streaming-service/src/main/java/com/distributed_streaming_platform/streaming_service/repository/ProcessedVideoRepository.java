@@ -12,5 +12,4 @@ public interface ProcessedVideoRepository extends JpaRepository<ProcessedVideo, 
 
     Optional<ProcessedVideo> findByContentIdAndStatus(Long contentId, String status);
 
-   // List<WatchHistory> findByUserId(Long userId);
 }
