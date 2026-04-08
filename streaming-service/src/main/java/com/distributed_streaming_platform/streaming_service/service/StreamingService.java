@@ -1,5 +1,7 @@
 package com.distributed_streaming_platform.streaming_service.service;
 
+import com.distributed_streaming_platform.events.VideoCompletedEvent;
+import com.distributed_streaming_platform.events.VideoProgressEvent;
 import com.distributed_streaming_platform.events.VideoStartedEvent;
 import com.distributed_streaming_platform.streaming_service.auth.UserContextHolder;
 import com.distributed_streaming_platform.streaming_service.dtos.StreamResponse;
@@ -114,5 +116,34 @@ public class StreamingService {
                 .build();
 
         analyticsEventProducer.sendVideoStartedEvent(event);
+    }
+
+    public void trackProgress(Long contentId, Long watchTime) {
+
+        Long userId = UserContextHolder.getCurrentUserId();
+
+        VideoProgressEvent event = VideoProgressEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .eventTime(LocalDateTime.now())
+                .userId(userId)
+                .contentId(contentId)
+                .watchTime(watchTime)
+                .build();
+
+        analyticsEventProducer.sendVideoProgressEvent(event);
+    }
+
+    public void markCompleted(Long contentId) {
+
+        Long userId = UserContextHolder.getCurrentUserId();
+
+        VideoCompletedEvent event = VideoCompletedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .eventTime(LocalDateTime.now())
+                .userId(userId)
+                .contentId(contentId)
+                .build();
+
+        analyticsEventProducer.sendVideoCompletedEvent(event);
     }
 }
