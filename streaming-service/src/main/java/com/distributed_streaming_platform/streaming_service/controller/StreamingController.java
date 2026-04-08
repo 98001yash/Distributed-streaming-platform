@@ -18,7 +18,7 @@ public class StreamingController {
         return streamingService.getStream(contentId);
     }
 
-    // 🔥 PROGRESS TRACKING
+
     @PostMapping("/{contentId}/progress")
     public void trackProgress(
             @PathVariable Long contentId,
@@ -27,7 +27,6 @@ public class StreamingController {
         streamingService.trackProgress(contentId, watchTime);
     }
 
-    // 🔥 COMPLETED TRACKING
     @PostMapping("/{contentId}/complete")
     public void markCompleted(@PathVariable Long contentId) {
         streamingService.markCompleted(contentId);
