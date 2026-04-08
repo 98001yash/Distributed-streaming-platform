@@ -32,8 +32,7 @@ public class AnalyticsConsumer {
 
     @KafkaListener(
             topics = "video-progress",
-            groupId = "analytics-group",
-            containerFactory = "kafkaListenerContainerFactory"
+            containerFactory = "videoProgressFactory"
     )
     public void consumeVideoProgress(VideoProgressEvent event) {
 
