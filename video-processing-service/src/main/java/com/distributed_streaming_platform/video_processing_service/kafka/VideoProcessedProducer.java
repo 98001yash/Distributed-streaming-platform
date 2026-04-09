@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class VideoProcessedProducer {
 
-    private final KafkaTemplate<String, VideoProcessedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     private static final String TOPIC = "video-processed";
 

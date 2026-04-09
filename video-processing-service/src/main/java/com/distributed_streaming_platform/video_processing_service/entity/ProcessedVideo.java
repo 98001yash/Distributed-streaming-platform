@@ -16,7 +16,7 @@ import java.time.Instant;
 @Table(
         name = "processed_videos",
         indexes = {
-                @Index(name = "idx_video_id", columnList = "videoId")
+                @Index(name = "idx_content_id", columnList = "content_id")
         }
 )
 public class ProcessedVideo {
