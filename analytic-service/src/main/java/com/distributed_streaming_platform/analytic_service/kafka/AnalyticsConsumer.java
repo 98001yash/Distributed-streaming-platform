@@ -34,7 +34,7 @@ public class AnalyticsConsumer {
             topics = "video-progress",
             containerFactory = "videoProgressFactory"
     )
-    public void consumeVideoProgress(VideoProgressEvent event) {
+    public void  consumeVideoProgress(VideoProgressEvent event) {
 
         log.info("Consumed VideoProgressEvent contentId={} watchTime={}",
                 event.getContentId(), event.getWatchTime());

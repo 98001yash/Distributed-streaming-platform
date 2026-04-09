@@ -8,17 +8,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class VideoProcessedProducer {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, VideoProcessedEvent> kafkaTemplate;
 
     private static final String TOPIC = "video-processed";
 
     public void send(VideoProcessedEvent event) {
         log.info("Sending VideoProcessedEvent for contentId={}", event.getContentId());
+
         kafkaTemplate.send(TOPIC, event.getContentId().toString(), event);
     }
 }

@@ -1,10 +1,12 @@
 package com.distributed_streaming_platform.video_processing_service.service;
 
+import com.distributed_streaming_platform.events.VideoProcessedEvent;
 import com.distributed_streaming_platform.events.VideoUploadedEvent;
 import com.distributed_streaming_platform.video_processing_service.entity.ProcessedVideo;
 import com.distributed_streaming_platform.video_processing_service.entity.VideoVariant;
 import com.distributed_streaming_platform.video_processing_service.enums.ProcessingStatus;
 import com.distributed_streaming_platform.video_processing_service.enums.VideoQuality;
+import com.distributed_streaming_platform.video_processing_service.kafka.VideoProcessedProducer;
 import com.distributed_streaming_platform.video_processing_service.repository.ProcessedVideoRepository;
 import com.distributed_streaming_platform.video_processing_service.repository.VideoVariantRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +16,9 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -25,6 +29,7 @@ public class VideoProcessingService {
     private final VideoVariantRepository videoVariantRepository;
     private final FFmpegService ffmpegService;
     private final StorageService storageService;
+    private final VideoProcessedProducer videoProcessedProducer;
 
     public void processVideo(VideoUploadedEvent event) {
 
@@ -45,7 +50,7 @@ public class VideoProcessingService {
 
         try {
 
-            //  HLS PROCESSING
+            // ✅ PROCESS VIDEO
             processHLS(processedVideo, event);
 
             processedVideo.setStatus(ProcessingStatus.COMPLETED);
@@ -53,12 +58,18 @@ public class VideoProcessingService {
 
             log.info("Processing completed for contentId={}", event.getContentId());
 
+            // 🚀🔥 SEND EVENT HERE
+            sendVideoProcessedEvent(processedVideo);
+
         } catch (Exception e) {
 
             log.error("Processing failed for contentId={}", event.getContentId(), e);
 
             processedVideo.setStatus(ProcessingStatus.FAILED);
             processedVideoRepository.save(processedVideo);
+
+            // 🚀 OPTIONAL: send FAILED event also
+            sendVideoProcessedEvent(processedVideo);
 
             throw new RuntimeException("Video processing failed", e);
         }
@@ -193,5 +204,34 @@ public class VideoProcessingService {
     public List<VideoVariant> getVariants(Long contentId) {
         ProcessedVideo video = getByContentId(contentId);
         return videoVariantRepository.findByProcessedVideoId(video.getId());
+    }
+
+    private void sendVideoProcessedEvent(ProcessedVideo processedVideo) {
+
+        VideoProcessedEvent event = VideoProcessedEvent.builder()
+                .eventId(processedVideo.getId())
+                .eventTim(java.time.LocalDateTime.now())
+                .contentId(processedVideo.getContentId())
+                .status(processedVideo.getStatus().name())
+                .variants(getVariantMap(processedVideo.getContentId()))
+                .build();
+
+        videoProcessedProducer.send(event);
+    }
+
+    private Map<String, String> getVariantMap(Long contentId) {
+
+        List<VideoVariant> variants =
+                videoVariantRepository.findByProcessedVideoId(
+                        processedVideoRepository.findByContentId(contentId).get().getId()
+                );
+
+        Map<String, String> map = new HashMap<>();
+
+        for (VideoVariant variant : variants) {
+            map.put(variant.getQuality().name(), variant.getUrl());
+        }
+
+        return map;
     }
 }
