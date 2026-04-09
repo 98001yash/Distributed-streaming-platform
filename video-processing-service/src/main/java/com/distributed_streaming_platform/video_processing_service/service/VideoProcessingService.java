@@ -50,7 +50,6 @@ public class VideoProcessingService {
 
         try {
 
-            // ✅ PROCESS VIDEO
             processHLS(processedVideo, event);
 
             processedVideo.setStatus(ProcessingStatus.COMPLETED);
@@ -58,7 +57,6 @@ public class VideoProcessingService {
 
             log.info("Processing completed for contentId={}", event.getContentId());
 
-            // 🚀🔥 SEND EVENT HERE
             sendVideoProcessedEvent(processedVideo);
 
         } catch (Exception e) {
@@ -68,7 +66,6 @@ public class VideoProcessingService {
             processedVideo.setStatus(ProcessingStatus.FAILED);
             processedVideoRepository.save(processedVideo);
 
-            // 🚀 OPTIONAL: send FAILED event also
             sendVideoProcessedEvent(processedVideo);
 
             throw new RuntimeException("Video processing failed", e);
