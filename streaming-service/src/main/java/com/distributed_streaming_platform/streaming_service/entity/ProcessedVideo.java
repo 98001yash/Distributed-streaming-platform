@@ -16,6 +16,7 @@ import lombok.*;
 public class ProcessedVideo {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     //  Used to fetch video

@@ -44,6 +44,7 @@ public class VideoProcessingService {
                 .contentId(event.getContentId())
                 .sourceUrl(event.getStorageUrl())
                 .status(ProcessingStatus.PROCESSING)
+                .uploadedBy(event.getUploadedBy())
                 .build();
 
         processedVideo = processedVideoRepository.save(processedVideo);
@@ -211,6 +212,7 @@ public class VideoProcessingService {
                 .contentId(processedVideo.getContentId())
                 .status(processedVideo.getStatus().name())
                 .variants(getVariantMap(processedVideo.getContentId()))
+                .uploadedBy(processedVideo.getUploadedBy())
                 .build();
 
         videoProcessedProducer.send(event);

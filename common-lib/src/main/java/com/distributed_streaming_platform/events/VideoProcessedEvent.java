@@ -19,6 +19,8 @@ public class VideoProcessedEvent {
     private LocalDateTime eventTim;
     private Long contentId;
 
+    private Long uploadedBy;
+
     private Map<String, String> variants;
     private String status;
 }

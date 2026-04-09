@@ -21,4 +21,6 @@ public class VideoUploadedEvent {
     private String objectKey;
     private String storageUrl;
     private String fileName;
+
+    private Long uploadedBy;
 }

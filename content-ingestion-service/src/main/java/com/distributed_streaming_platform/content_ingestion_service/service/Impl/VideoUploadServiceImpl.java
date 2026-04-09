@@ -109,6 +109,7 @@ public class VideoUploadServiceImpl implements VideoUploadService {
                 .objectKey(asset.getObjectKey())
                 .storageUrl(asset.getStorageUrl())
                 .fileName(asset.getFileName())
+                .uploadedBy(UserContextHolder.getCurrentUserId())
                 .build();
 
         videoEventProducer.sendVideoUploadedEvent(event);

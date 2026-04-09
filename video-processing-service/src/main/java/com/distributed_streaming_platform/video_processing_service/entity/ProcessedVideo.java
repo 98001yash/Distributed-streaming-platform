@@ -38,6 +38,7 @@ public class ProcessedVideo {
 
     private String masterPlaylistUrl;
 
+    private Long uploadedBy;
     private Instant createdAt;
     private Instant updatedAt;
 

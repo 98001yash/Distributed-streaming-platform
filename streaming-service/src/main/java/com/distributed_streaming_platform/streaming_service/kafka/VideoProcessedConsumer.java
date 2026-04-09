@@ -34,6 +34,7 @@ public class VideoProcessedConsumer {
 
         video.setContentId(event.getContentId());
         video.setStatus(event.getStatus());
+        video.setUploadedBy(event.getUploadedBy());
 
         //  Extract master playlist from variants
         String masterUrl = event.getVariants().get("P720"); // or choose best quality
