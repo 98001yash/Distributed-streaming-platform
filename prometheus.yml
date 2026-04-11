@@ -2,18 +2,43 @@ global:
   scrape_interval: 5s
 
 scrape_configs:
+
   - job_name: 'api-gateway'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8081']
+      - targets: ['api-gateway:8081']
 
   - job_name: 'auth-service'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8090']
-
+      - targets: ['auth-service:8090']
 
   - job_name: 'user-service'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: [ 'host.docker.internal:8091' ]
+      - targets: ['user-service:8091']
+
+  - job_name: 'content-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['content-service:8092']
+
+  - job_name: 'ingestion-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['content-ingestion-service:8093']
+
+  - job_name: 'video-processing-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['video-processing-service:8094']
+
+  - job_name: 'streaming-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['streaming-service:8095']
+
+  - job_name: 'analytic-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['analytic-service:8097']
