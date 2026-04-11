@@ -5,6 +5,7 @@ services:
   mysql:
     image: mysql:8
     container_name: streaming-mysql
+    restart: always
     environment:
       MYSQL_ROOT_PASSWORD: yash8252
     ports:
@@ -18,10 +19,10 @@ services:
       timeout: 5s
       retries: 10
 
-
   kafka:
     image: apache/kafka:3.7.0
     container_name: kafka
+    restart: always
     ports:
       - "9092:9092"
     environment:
@@ -35,18 +36,23 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_CLUSTER_ID: streaming-cluster
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
+    healthcheck:
+      test: ["CMD", "bash", "-c", "nc -z localhost 9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7
     container_name: redis
+    restart: always
     ports:
       - "6379:6379"
-
 
   minio:
     image: minio/minio
     container_name: minio
+    restart: always
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -55,28 +61,40 @@ services:
       MINIO_ROOT_PASSWORD: password123
     command: server /data --console-address ":9001"
 
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      mc alias set myminio http://minio:9000 admin password123;
+      mc mb myminio/videos || true;
+      exit 0;
+      "
 
   discovery-server:
     build:
       context: .
       dockerfile: discovery-server/Dockerfile
     container_name: discovery-server
+    restart: always
     ports:
       - "8761:8761"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-
 
   auth-service:
     build:
       context: .
       dockerfile: auth-service/Dockerfile
     container_name: auth-service
+    restart: always
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       discovery-server:
         condition: service_started
     ports:
@@ -89,17 +107,17 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
 
-
   user-service:
     build:
       context: .
       dockerfile: user-service/Dockerfile
     container_name: user-service
+    restart: always
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_started
       discovery-server:
@@ -115,17 +133,17 @@ services:
       SPRING_REDIS_HOST: redis
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
 
-
   content-service:
     build:
       context: .
       dockerfile: content-service/Dockerfile
     container_name: content-service
+    restart: always
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       discovery-server:
         condition: service_started
     ports:
@@ -138,17 +156,17 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
 
-
   content-ingestion-service:
     build:
       context: .
       dockerfile: content-ingestion-service/Dockerfile
     container_name: content-ingestion-service
+    restart: always
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_started
       discovery-server:
@@ -164,17 +182,17 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
 
-
   video-processing-service:
     build:
       context: .
       dockerfile: video-processing-service/Dockerfile
     container_name: video-processing-service
+    restart: always
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_started
       discovery-server:
@@ -190,17 +208,17 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
 
-
   streaming-service:
     build:
       context: .
       dockerfile: streaming-service/Dockerfile
     container_name: streaming-service
+    restart: always
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_started
       discovery-server:
@@ -216,17 +234,17 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
 
-
   analytic-service:
     build:
       context: .
       dockerfile: analytic-service/Dockerfile
     container_name: analytic-service
+    restart: always
     depends_on:
       mysql:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
       discovery-server:
         condition: service_started
     ports:
@@ -239,12 +257,12 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
 
-
   api-gateway:
     build:
       context: .
       dockerfile: api-gateway/Dockerfile
     container_name: api-gateway
+    restart: always
     depends_on:
       discovery-server:
         condition: service_started
@@ -256,6 +274,31 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka
       SPRING_REDIS_HOST: redis
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: always
+    depends_on:
+      - api-gateway
+      - auth-service
+      - user-service
+      - content-service
+      - content-ingestion-service
+      - video-processing-service
+      - streaming-service
+      - analytic-service
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
 
 volumes:
   mysql-data:
