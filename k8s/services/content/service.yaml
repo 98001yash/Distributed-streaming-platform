@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: content-service
+  namespace: streaming-platform
+
+spec:
+  selector:
+    app: content-service
+
+  ports:
+    - port: 8092
+      targetPort: 8092
+
+  type: ClusterIP
