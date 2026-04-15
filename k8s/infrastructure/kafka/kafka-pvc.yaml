@@ -5,6 +5,9 @@ metadata:
   namespace: streaming-platform
 
 spec:
+  storageClassName: standard
+  volumeName: kafka-pv   # 🔥 IMPORTANT
+
   accessModes:
     - ReadWriteOnce
 

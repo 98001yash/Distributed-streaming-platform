@@ -6,7 +6,7 @@ metadata:
 
 spec:
   serviceName: kafka
-  replicas: 1   # single node for now
+  replicas: 1
 
   selector:
     matchLabels:
@@ -61,14 +61,7 @@ spec:
             - name: kafka-storage
               mountPath: /var/lib/kafka/data
 
-  volumeClaimTemplates:
-    - metadata:
-        name: kafka-storage
-
-      spec:
-        accessModes:
-          - ReadWriteOnce
-
-        resources:
-          requests:
-            storage: 5Gi
+      volumes:
+        - name: kafka-storage
+          persistentVolumeClaim:
+            claimName: kafka-pvc   # 🔥 USE YOUR PVC

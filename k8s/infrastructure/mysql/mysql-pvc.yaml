@@ -1,10 +1,14 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
+
 metadata:
   name: mysql-pvc
   namespace: streaming-platform
 
 spec:
+  storageClassName: standard
+  volumeName: mysql-pv
+
   accessModes:
     - ReadWriteOnce
 
