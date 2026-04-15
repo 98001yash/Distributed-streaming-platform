@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: content-ingestion-service
+  namespace: streaming-platform
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: content-ingestion-service
+
+  template:
+    metadata:
+      labels:
+        app: content-ingestion-service
+
+    spec:
+      containers:
+        - name: ingestion
+          image: ingestion-service:v1
+          imagePullPolicy: Never
+
+          ports:
+            - containerPort: 8093
+
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:mysql://mysql:3306/streaming_ingestiondb
+
+            - name: SPRING_DATASOURCE_USERNAME
+              value: root
+
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: yash8252
+
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: kafka:9092
+
+            - name: MINIO_URL
+              value: http://minio:9000
+
+            - name: MINIO_ACCESS_KEY
+              value: admin
+
+            - name: MINIO_SECRET_KEY
+              value: password123
+
+            - name: MINIO_BUCKET
+              value: videos
+
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://discovery-server:8761/eureka
