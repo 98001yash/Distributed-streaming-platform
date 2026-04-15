@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: streaming-platform
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: api-gateway
+
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+
+    spec:
+      containers:
+        - name: api-gateway
+          image: api-gateway:v1
+          imagePullPolicy: Never
+
+          ports:
+            - containerPort: 8081
+
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+
+      volumes:
+        - name: config
+          configMap:
+            name: api-gateway-config
