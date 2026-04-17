@@ -1,10 +1,9 @@
-
+# ---------- BUILD STAGE ----------
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
 COPY pom.xml .
-
 COPY common-lib ./common-lib
 COPY discovery-server ./discovery-server
 COPY api-gateway ./api-gateway
@@ -18,14 +17,10 @@ COPY analytic-service ./analytic-service
 
 RUN mvn clean package -pl video-processing-service -am -DskipTests
 
-
-
-FROM eclipse-temurin:21-jre
+# ---------- RUNTIME STAGE ----------
+FROM jrottenberg/ffmpeg:6.0-ubuntu2204
 
 WORKDIR /app
-
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
-
 
 COPY --from=build /app/video-processing-service/target/*.jar app.jar
 
