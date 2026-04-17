@@ -20,6 +20,10 @@ RUN mvn clean package -pl video-processing-service -am -DskipTests
 # ---------- RUNTIME STAGE ----------
 FROM jrottenberg/ffmpeg:6.0-ubuntu2204
 
+RUN apt-get update && \
+    apt-get install -y openjdk-21-jre-headless && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY --from=build /app/video-processing-service/target/*.jar app.jar

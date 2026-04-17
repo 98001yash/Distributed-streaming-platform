@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: api-gateway:v1
+          image: distributed-streaming-platform/api-gateway:v1
           imagePullPolicy: Never
 
           ports:

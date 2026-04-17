@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: analytics-service
-          image: analytic-service:v1
+          image: distributed-streaming-platform/analytics-service:v1
           imagePullPolicy: Never
 
           ports:
