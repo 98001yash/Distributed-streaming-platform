@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: video-processing
-          image: video-processing:v1
+          image: distributed-streaming-platform/video-processing-service:v1
           imagePullPolicy: Never
 
           ports:

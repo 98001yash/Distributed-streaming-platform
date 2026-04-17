@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: content-service
-          image: content-service:v1
+          image: distributed-streaming-platform/content-service:v1
           imagePullPolicy: Never
 
           ports:

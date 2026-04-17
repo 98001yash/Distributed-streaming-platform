@@ -15,10 +15,10 @@ COPY content-service ./content-service
 COPY content-ingestion-service ./content-ingestion-service
 COPY video-processing-service ./video-processing-service
 COPY streaming-service ./streaming-service
-COPY analytic-service ./analytic-service
+COPY analytic-service ./analyticc-service
 
 
-RUN mvn clean package -pl streaming-service -am -DskipTests
+RUN mvn clean package -pl video-processing-service -am -DskipTests
 
 
 
@@ -27,7 +27,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 
-COPY --from=build /app/streaming-service/target/*.jar app.jar
+COPY --from=build /app/video-processing-service/target/*.jar app.jar
 
 
 EXPOSE 8095
